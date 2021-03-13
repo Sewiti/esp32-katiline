@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <style>
+    .icon {
+      height: 1em;
+      width: 1em;
+    }
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+    integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+  <title>Katilinės nustatymai</title>
+</head>
+
+<body>
+  <div class="container-md content">
+    <div class="row mt-3">
+      <div class="col">
+        <h2>Katilinė</h2>
+        <hr>
+      </div>
+    </div>
+
+    <form class="form-group" method="POST">
+      <div class="row">
+        <div class="col">
+          <h4>Nustatymai</h4>
+        </div>
+      </div>
+
+      <div class="row mt-2" %ALERT%>
+        <div class="col">
+          <div class="alert %ALERT_TYPE%" role="alert">
+            %ALERT_MSG%
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col">
+          <label class="col-form-label" for="temp-trigger">Pranešti, kai temperatūra nukrenta žemiau</label>
+
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text">
+                <i class="icon" data-feather="thermometer"></i>
+              </span>
+            </div>
+
+            <input class="form-control" id="temp-trigger" name="temp-trigger" type="number" step="0.1" required min="0"
+              max="150" value="%TEMP_TRIGGER%" autocomplete="off">
+
+            <div class="input-group-append">
+              <span class="input-group-text">°C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row my-3">
+        <div class="col">
+          <label class="col-form-label" for="temp-reset">Atstatyti, kai temperatūra pakyla virš</label>
+
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text">
+                <i class="icon" data-feather="thermometer"></i>
+              </span>
+            </div>
+
+            <input class="form-control" id="temp-reset" name="temp-reset" type="number" step="0.1" required min="0"
+              max="150" value="%TEMP_RESET%" autocomplete="off">
+
+            <div class="input-group-append">
+              <span class="input-group-text">°C</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row my-3">
+        <div class="col">
+          <label class="col-form-label" for="phones">Telefono numeriai, kuriems pranešti (iki 10)</label>
+
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text">
+                <i class="icon" data-feather="bell"></i>
+              </span>
+            </div>
+
+            <input class="form-control" id="phones" name="phones" type="text"
+              pattern="^\s*\+370\d{8}(?:[\s,;]+\+370\d{8}){0,9}[\s.,;]*$" value="%PHONES%" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="row my-3">
+        <div class="col">
+          <label class="col-form-label" for="state">Pranešimų statuso keitimas</label>
+
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text">
+                <i class="icon" data-feather="info"></i>
+              </span>
+            </div>
+
+            <select class="custom-select" id="state" name="state" autocomplete="off">
+              <option value="1" %STATE_ACTIVE%>Aktyvūs</option>
+              <option value="0" %STATE_TRIGGERED%>Pranešta</option>
+              <option value="2" %STATE_STOPPED%>Sustabdyti</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row my-3">
+        <div class="col">
+          <label for="password" class="col-form-label">Slaptažodis</label>
+
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <span class="input-group-text">
+                <i class="icon" data-feather="key"></i>
+              </span>
+            </div>
+
+            <input id="password" name="password" type="password" class="form-control" required
+              autocomplete="current-password">
+          </div>
+        </div>
+      </div>
+
+      <div class="row my-3">
+        <div class="col text-right">
+          <a class="btn btn-outline-dark mr-2" href="index.html">
+            <i class="icon" data-feather="arrow-left"></i>
+            Grįžti
+          </a>
+          <button class="btn btn-primary" type="submit">
+            <i class="icon" data-feather="save"></i>
+            Išsaugoti
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    feather.replace()
+  </script>
+</body>
+
+</html>
