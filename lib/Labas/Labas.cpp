@@ -36,10 +36,10 @@ bool Labas::sendSMS(String recipient, String message)
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     http.addHeader("Cookie", "scml=" + this->scml);
 
-    int resCode = http.POST(data);
+    http.POST(data);
     http.end();
 
-    return resCode > 0;
+    return true; // we just assume it went through.. for simplicity's sake
 }
 
 bool Labas::getSCML()

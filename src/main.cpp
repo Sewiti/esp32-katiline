@@ -16,7 +16,7 @@
 #define PREFS_KEY "katiline"
 
 #define LOG_PATH "/katiline.log"
-#define TEMP_LOG_PATH "/katiline-temps.csv"
+#define TEMP_LOG_PATH "/temperaturos_istorija.csv"
 
 #define TEMP_TRIGGER_KEY "temp-trigger"
 #define TEMP_RESET_KEY "temp-reset"
@@ -158,12 +158,25 @@ static void log(String message)
     writeFile(LOG_PATH, Log);
 }
 
+static String formatTemp(float temp, const String &nullReturn = "--.-", const char &separator = '.')
+{
+    if (temp == DEVICE_DISCONNECTED_C)
+        return nullReturn;
+
+    String str = String(temp, 1);
+
+    if (separator != '.')
+        str.replace('.', separator);
+
+    return str;
+}
+
 static void logTemp()
 {
     if (temp == DEVICE_DISCONNECTED_C)
         return;
 
-    String str = '\"' + DateTime.toString() + "\"," + String(temp, 1) + "\n";
+    String str = '\"' + DateTime.format("%F %H:%M") + "\"," + formatTemp(temp, "") + "\n";
     String temps = readFile(TEMP_LOG_PATH);
     temps = limit(temps + str, tempLogSize);
 
@@ -180,19 +193,19 @@ static void changeState(States newState, String caller = String())
     switch (newState)
     {
     case States::Triggered:
-        log(caller + "pranešimai: pranešta");
+        log(caller + "pranešta");
         break;
 
     case States::Active:
-        log(caller + "pranešimai: aktyvūs");
+        log(caller + "aktyvūs");
         break;
 
     case States::Stopped:
-        log(caller + "pranešimai: sustabdyti");
+        log(caller + "sustabdyti");
         break;
 
     default:
-        log(caller + "pranešimai: nepakeisti, klaida");
+        log(caller + "klaida");
         return;
     }
 
@@ -215,16 +228,6 @@ static bool incrementSMSCounter()
     return tr < dayLimit;
 }
 
-static String formatTemp(float temp)
-{
-    if (temp == DEVICE_DISCONNECTED_C)
-        return "";
-
-    String str = String(temp, 1);
-    str.replace(".", ",");
-    return str;
-}
-
 static void triggerState()
 {
     bool successful = false;
@@ -237,11 +240,15 @@ static void triggerState()
         return;
     }
 
-    changeState(States::Triggered, "temp " + String(temp, 1) + "C: ");
+    changeState(States::Triggered, "temp " + formatTemp(temp) + "C: ");
+
+    if (!incrementSMSCounter())
+    {
+        changeState(States::Stopped, "limitas: ");
+    }
 
     String phone;
-    String message = "Katilinės temperatūra nukrito iki " + formatTemp(temp) + "°C.";
-    // String message = "Katilinės temperatūra nukrito žemiau " + formatTemp(tempTrigger) + "°C, dabartinė temperatūra " + formatTemp(temp) + "°C.";
+    String message = "Katilinės temperatūra nukrito iki " + formatTemp(temp, "--,-", ',') + "°C.";
 
     for (int i = 0; i >= 0; i = phones.indexOf('+', i))
     {
@@ -250,9 +257,6 @@ static void triggerState()
 
         if (phone.length() == 12)
         {
-            // Serial.print("labas: sending sms to ");
-            // Serial.println(phone);
-
             successful = false;
             for (int j = 0; !successful && j < labasAttempts; j++)
                 successful = labas.sendSMS(phone, message);
@@ -261,16 +265,11 @@ static void triggerState()
                 Serial.println("labas: failed to send sms");
         }
     }
-
-    if (!incrementSMSCounter())
-    {
-        changeState(States::Stopped, "limitas: ");
-    }
 }
 
 static void resetState()
 {
-    changeState(States::Active, "temp " + String(temp, 1) + "C: ");
+    changeState(States::Active, "temp " + formatTemp(temp) + "C: ");
 }
 
 static void checkTemp()
@@ -322,10 +321,59 @@ static String trimPhones(String string)
     return str;
 }
 
+static String statsProcessor(const String &var)
+{
+    if (var == "TEMP")
+        return formatTemp(temp, "null");
+
+    if (var == "TEMP_TRIGGER")
+        return formatTemp(tempTrigger, "null");
+
+    if (var == "TEMP_RESET")
+        return formatTemp(tempReset, "null");
+
+    if (var == "STATE")
+    {
+        if (state == States::Triggered)
+            return "\"triggered\"";
+
+        if (state == States::Active)
+            return "\"active\"";
+
+        if (state == States::Stopped)
+            return "\"stopped\"";
+
+        return "null";
+    }
+
+    if (var == "DATETIME")
+        return '"' + DateTime.toString() + '"';
+
+    if (var == "HEAP_FREE")
+        return String(ESP.getFreeHeap());
+
+    if (var == "HEAP_SIZE")
+        return String(ESP.getHeapSize());
+
+    if (var == "HEAP_PERCENTAGE")
+        return String((float)ESP.getFreeHeap() / (float)ESP.getHeapSize() * (float)100, 1);
+
+    if (var == "SPIFFS_USED")
+        return String(SPIFFS.usedBytes());
+
+    if (var == "SPIFFS_TOTAL")
+        return String(SPIFFS.totalBytes());
+
+    if (var == "SPIFFS_PERCENTAGE")
+        return String((float)SPIFFS.usedBytes() / (float)SPIFFS.totalBytes() * (float)100, 1);
+
+    return "null";
+}
+
 static String templateProcessor(const String &var)
 {
     if (var == "TEMP")
-        return formatTemp(temp);
+        return formatTemp(temp, "--,-", ',');
 
     if (var == "STATE_TRIGGERED")
         return state == States::Triggered ? "selected" : "";
@@ -336,11 +384,25 @@ static String templateProcessor(const String &var)
     if (var == "STATE_STOPPED")
         return state == States::Stopped ? "selected" : "";
 
+    // if (var == "STATE")
+    // {
+    //     if (state == States::Triggered)
+    //         return "Pranešta";
+
+    //     if (state == States::Active)
+    //         return "Aktyvūs";
+
+    //     if (state == States::Stopped)
+    //         return "Sustabdyti";
+
+    //     return "-";
+    // }
+
     if (var == "TEMP_TRIGGER")
-        return String(tempTrigger, 1);
+        return formatTemp(tempTrigger, "0.0");
 
     if (var == "TEMP_RESET")
-        return String(tempReset, 1);
+        return formatTemp(tempReset, "0.0");
 
     if (var == "PHONES")
         return phones;
@@ -350,6 +412,9 @@ static String templateProcessor(const String &var)
 
     if (var == "LOG")
         return Log.substring(0, Log.length() - 1);
+
+    if (var == "TIME")
+        return DateTime.format(DateFormatter::TIME_ONLY);
 
     return "";
 }
@@ -449,11 +514,6 @@ void setup()
         Serial.println("Failed to mount SPIFFS.");
         return;
     }
-    Serial.print("SPIFFS used ");
-    Serial.print(SPIFFS.usedBytes());
-    Serial.print("B out of ");
-    Serial.print(SPIFFS.totalBytes());
-    Serial.println("B.");
 
     if (!SPIFFS.exists(TEMP_LOG_PATH))
         SPIFFS.open(TEMP_LOG_PATH, FILE_WRITE);
@@ -523,8 +583,12 @@ void setup()
 
     server.on("/nustatymai.html", HTTP_POST, handlePost);
 
-    server.on("/temp_log.csv", HTTP_GET, [](AsyncWebServerRequest *request) {
+    server.on(TEMP_LOG_PATH, HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(SPIFFS, TEMP_LOG_PATH, "text/csv", true);
+    });
+
+    server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(SPIFFS, "/status.min.json", "application/json", false, statsProcessor);
     });
 
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
