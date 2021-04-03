@@ -26,6 +26,13 @@
 #define LIMIT_TODAY_KEY "today"
 #define LIMIT_TODAY_TRIGGERED_KEY "triggers-tdy"
 
+enum States
+{
+    Triggered = 0,
+    Active = 1,
+    Stopped = 2
+};
+
 static String limit(String string, int n);
 static String limitEnd(String string, int n);
 static const float clamp(float value, float min, float max);
@@ -68,13 +75,6 @@ const char *labasUsername = "LABAS_USERNAME";
 const char *labasPassword = "LABAS_PASSWORD";
 
 const char *editPassword = "EDIT_PASSWORD";
-
-enum States
-{
-    Triggered = 0,
-    Active = 1,
-    Stopped = 2
-};
 
 States state;
 
@@ -180,7 +180,7 @@ static void log(String message)
     writeFile(LOG_PATH, Log); // TODO: use appendFile...
 }
 
-static String formatTemp(float temp, const String &nullReturn = "--.-", const char &separator = '.')
+static String formatTemp(float temp, const String &nullReturn, const char &separator)
 {
     if (temp == DEVICE_DISCONNECTED_C)
         return nullReturn;
@@ -205,7 +205,7 @@ static void logTemp()
     writeFile(TEMP_LOG_PATH, temps);
 }
 
-static void changeState(States newState, String caller = String())
+static void changeState(States newState, String caller)
 {
     if (state == newState)
     {
