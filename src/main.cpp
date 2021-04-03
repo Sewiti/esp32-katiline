@@ -26,13 +26,35 @@
 #define LIMIT_TODAY_KEY "today"
 #define LIMIT_TODAY_TRIGGERED_KEY "triggers-tdy"
 
+static String limit(String string, int n);
+static String limitEnd(String string, int n);
+static const float clamp(float value, float min, float max);
+static void writeFile(String path, String contents);
+static String readFile(String path);
+static void log(String message);
+static String formatTemp(float temp, const String &nullReturn = "--.-", const char &separator = '.');
+static void logTemp();
+static void changeState(States newState, String caller = String());
+static bool incrementSMSCounter();
+static void triggerState();
+static void resetState();
+static void checkTemp();
+static void readTemp();
+static String trimPhones(String string);
+static String statusProcessor(const String &var);
+static String templateProcessor(const String &var);
+static void handlePost(AsyncWebServerRequest *request);
+static void restart();
+
 const static int logSize = 50;
 const static int tempLogSize = 500;
 
-const static int dayLimit = 10;
+const static int smsDayLimit = 10;
 
-const static int tempPollingMS = 60000;
-const static int tempLoggingMS = 600000;
+const static int tempPollingMS = 60000;  //  1 min
+const static int tempLoggingMS = 600000; // 10 mins
+
+const static int restartAfterMS = 432000000; // 5 days
 
 const static float maxTemp = 150;
 const static float minTemp = 0;
@@ -155,7 +177,7 @@ static void log(String message)
     Log = str + Log;
     Log = limitEnd(Log, logSize);
 
-    writeFile(LOG_PATH, Log);
+    writeFile(LOG_PATH, Log); // TODO: use appendFile...
 }
 
 static String formatTemp(float temp, const String &nullReturn = "--.-", const char &separator = '.')
@@ -225,7 +247,7 @@ static bool incrementSMSCounter()
 
     prefs.putInt(LIMIT_TODAY_TRIGGERED_KEY, tr + 1);
 
-    return tr < dayLimit;
+    return tr < smsDayLimit;
 }
 
 static void triggerState()
@@ -321,7 +343,7 @@ static String trimPhones(String string)
     return str;
 }
 
-static String statsProcessor(const String &var)
+static String statusProcessor(const String &var)
 {
     if (var == "TEMP")
         return formatTemp(temp, "null");
@@ -383,20 +405,6 @@ static String templateProcessor(const String &var)
 
     if (var == "STATE_STOPPED")
         return state == States::Stopped ? "selected" : "";
-
-    // if (var == "STATE")
-    // {
-    //     if (state == States::Triggered)
-    //         return "Pranešta";
-
-    //     if (state == States::Active)
-    //         return "Aktyvūs";
-
-    //     if (state == States::Stopped)
-    //         return "Sustabdyti";
-
-    //     return "-";
-    // }
 
     if (var == "TEMP_TRIGGER")
         return formatTemp(tempTrigger, "0.0");
@@ -502,8 +510,14 @@ static void handlePost(AsyncWebServerRequest *request)
     });
 }
 
+static void restart()
+{
+    ESP.restart();
+}
+
 Ticker tempTicker(readTemp, tempPollingMS, 0, MILLIS);
 Ticker tempLogTicker(logTemp, tempLoggingMS, 0, MILLIS);
+Ticker restartTicker(restart, restartAfterMS, 1, MILLIS);
 
 void setup()
 {
@@ -548,7 +562,7 @@ void setup()
     WiFi.begin(wifiSSID, wifiPassword);
     while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.print(".");
+        Serial.print('.');
         delay(1000);
     }
 
@@ -558,9 +572,9 @@ void setup()
     // Time
     Serial.print("Getting time");
     DateTime.setTimeZone(TIMEZONE);
-    if (!DateTime.begin())
+    while (!DateTime.begin())
     {
-        Serial.print(".");
+        Serial.print('.');
         delay(1000);
     }
     Serial.println();
@@ -588,7 +602,7 @@ void setup()
     });
 
     server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(SPIFFS, "/status.min.json", "application/json", false, statsProcessor);
+        request->send(SPIFFS, "/status.min.json", "application/json", false, statusProcessor);
     });
 
     server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -621,10 +635,12 @@ void setup()
 
     tempTicker.start();
     tempLogTicker.start();
+    restartTicker.start();
 }
 
 void loop()
 {
     tempTicker.update();
     tempLogTicker.update();
+    restartTicker.update();
 }
