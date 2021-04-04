@@ -9,7 +9,7 @@
 #include <Labas.h>
 
 #define FORMAT_SPIFFS_IF_FAILED true
-#define TIMEZONE 2
+#define TIMEZONE 3
 
 #define TEMP_PIN 4
 
