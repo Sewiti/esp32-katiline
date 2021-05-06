@@ -6,7 +6,6 @@
 #define TEMP_PIN 4
 
 void readTemp();
-void allowCors(AsyncWebServerRequest *request);
 void setupNetwork();
 void setupServer();
 
@@ -25,14 +24,6 @@ void readTemp()
 
     if (reading != DEVICE_DISCONNECTED_C)
         tempC = reading;
-}
-
-void allowCors(AsyncWebServerRequest *request)
-{
-    AsyncWebServerResponse *response = request->beginResponse(200);
-    response->addHeader(F("Access-Control-Allow-Origin"), F("*"));
-    response->addHeader(F("Access-Control-Allow-Methods"), F("GET"));
-    request->send(response);
 }
 
 void setupNetwork()
@@ -66,66 +57,35 @@ void setupServer()
     // Routes
     server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (tempC == DEVICE_DISCONNECTED_C)
-        {
             request->send(200, F("application/json"), F("{\"temp_c\":null}"));
-        }
+
         else
-        {
-            String Content = F("{\"temp_c\":");
-            Content += String(tempC, 1);
-            Content += F("}");
-            request->send(200, F("application/json"), Content);
-        }
-    });
-
-    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
-        multi_heap_info_t info;
-        heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
-
-        String Content = F("{\"allocated_blocks\":");
-        Content += String(info.allocated_blocks);
-
-        Content += F(",\"free_blocks\":");
-        Content += String(info.free_blocks);
-
-        Content += F(",\"largest_free_block\":");
-        Content += String(info.largest_free_block);
-
-        Content += F(",\"minimum_free_bytes\":");
-        Content += String(info.minimum_free_bytes);
-
-        Content += F(",\"total_allocated_bytes\":");
-        Content += String(info.total_allocated_bytes);
-
-        Content += F(",\"total_blocks\":");
-        Content += String(info.total_blocks);
-
-        Content += F(",\"total_free_bytes\":");
-        Content += String(info.total_free_bytes);
-        Content += F("}");
-
-        request->send(200, F("application/json"), Content);
+            request->send(200, F("application/json"), "{\"temp_c\":" + String(tempC, 1) + "}");
     });
 
     // CORS
-    server.on("/temp", HTTP_OPTIONS, allowCors);
-    server.on("/heap", HTTP_OPTIONS, allowCors);
+    auto allowGet = [](AsyncWebServerRequest *request) {
+        auto res = request->beginResponse(200);
+
+        res->addHeader(F("Access-Control-Allow-Origin"), F("*"));
+        res->addHeader(F("Access-Control-Allow-Methods"), F("GET"));
+
+        request->send(res);
+    };
+
+    server.on("/temp", HTTP_OPTIONS, allowGet);
 }
 
 void setup()
 {
     Serial.begin(115200);
 
-    // Network setup
     setupNetwork();
 
-    // Sensors setup
     sensors.begin();
-
     if (!sensors.getAddress(tempAddr, 0))
         Serial.println(F("Unable to find address for Device 0"));
 
-    // Start server
     setupServer();
     server.begin();
 }
