@@ -2,17 +2,13 @@
 #include <DallasTemperature.h>
 #include <ESPAsyncWebServer.h>
 #include <Secrets.h>
-#include <Ticker.h>
 
 #define TEMP_PIN 4
-#define READ_TEMP_MILLIS 5000    // 5sec
-#define RESTART_MILLIS 259200000 // 3 days
 
 void readTemp();
 void allowCors(AsyncWebServerRequest *request);
 void setupNetwork();
 void setupServer();
-void resetServer();
 
 float tempC = DEVICE_DISCONNECTED_C;
 
@@ -21,9 +17,6 @@ DallasTemperature sensors(&wire);
 DeviceAddress tempAddr;
 
 AsyncWebServer server(80);
-
-Ticker tempTicker(readTemp, READ_TEMP_MILLIS, 0, MILLIS);
-Ticker serverTicker(resetServer, RESTART_MILLIS, 0, MILLIS);
 
 void readTemp()
 {
@@ -119,13 +112,6 @@ void setupServer()
     server.on("/heap", HTTP_OPTIONS, allowCors);
 }
 
-void resetServer()
-{
-    server.reset();
-    setupServer();
-    server.begin();
-}
-
 void setup()
 {
     Serial.begin(115200);
@@ -142,14 +128,9 @@ void setup()
     // Start server
     setupServer();
     server.begin();
-
-    // Start ticker
-    tempTicker.start();
-    serverTicker.start();
 }
 
 void loop()
 {
-    tempTicker.update();
-    serverTicker.update();
+    readTemp();
 }
