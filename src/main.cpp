@@ -6,8 +6,9 @@
 #include <Config.h>
 #include <TemperatureMonitor.h>
 
-WebServer server(80);
-TemperatureMonitor monitor(&server, TEMP_PIN, TEMP_POLLING_MILLIS, F(TEMP_URI));
+String info;
+WebServer *server;
+TemperatureMonitor *monitor;
 
 void setup()
 {
@@ -44,27 +45,44 @@ void setup()
 
     // Time
     Serial.print(F("Getting time"));
+    DateTime.setTimeZone(TIMEZONE);
     while (!DateTime.begin())
     {
         Serial.print(F("."));
         delay(1000);
     }
 
+    String time = DateTime.format("%T %b %e %Y");
     Serial.print(F("\nCurrent time: "));
-    Serial.println(DateTime.format(DateFormatter::ISO8601));
+    Serial.println(time);
+
+    // Basic info
+    info = F("{\"compiled\":\"");
+    info += __TIME__;
+    info += F(" ");
+    info += __DATE__;
+    info += F("\",\"last_boot\":\"");
+    info += time;
+    info += F("\"}");
 
     // Server
-    server.serveStatic("/", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
-    server.serveStatic("/index.html", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
+    server = new WebServer(80);
+    monitor = new TemperatureMonitor(server, TEMP_PIN, TEMP_POLLING_MILLIS, F(TEMP_URI));
 
-    server.onNotFound([]()
-                      { server.send(404, F("text/plain"), F("Not Found")); });
-    server.enableCORS();
-    server.begin();
+    server->serveStatic("/", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
+    server->serveStatic("/index.html", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
+
+    server->on("/info", HTTP_GET, []()
+               { server->send(200, F("application/json"), info); });
+
+    server->onNotFound([]()
+                       { server->send(404, F("text/plain"), F("Not Found")); });
+    server->enableCORS();
+    server->begin();
 }
 
 void loop()
 {
-    server.handleClient();
-    monitor.update();
+    server->handleClient();
+    monitor->update();
 }
