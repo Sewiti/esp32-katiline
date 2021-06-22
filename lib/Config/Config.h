@@ -1,8 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <DateTimeTZ.h>
+
+// Time
+#define TIMEZONE TZ_Europe_Vilnius
+
 // Network
-#define ADDRESS 192, 168, 10, 55
+#define ADDRESS 192, 168, 10, 54
 #define GATEWAY 192, 168, 10, 1
 #define NETMASK 255, 255, 255, 0
 #define DNS_PRI 1, 1, 1, 3
@@ -17,7 +22,7 @@
 
 // Server
 #define TEMP_URI "/temp"
-#define STATIC_CACHE_CONTROL "max-age=86400"
+#define STATIC_CACHE_CONTROL "max-age=86400" // 1day
 
 // Files
 #define INDEX_FS_PATH "/index.min.html"
