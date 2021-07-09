@@ -9,11 +9,13 @@
 #include <TemperatureMonitor.h>
 
 void logTemp();
+void checkWiFi();
 
 String info;
 Logging *hist;
 TemperatureMonitor *monitor;
 Ticker *histTicker;
+Ticker *wifiTicker;
 WebServer *server;
 
 void setup()
@@ -49,6 +51,10 @@ void setup()
 
     Serial.print(F("\nConnected: "));
     Serial.println(WiFi.localIP());
+
+    // Setup auto reconnect if connection dropped
+    wifiTicker = new Ticker(checkWiFi, WIFI_CHECK_FREQ, 0, MILLIS);
+    wifiTicker->start();
 
     // Time
     Serial.print(F("Getting time"));
@@ -109,6 +115,7 @@ void loop()
     server->handleClient();
     monitor->update();
     histTicker->update();
+    wifiTicker->update();
 }
 
 void logTemp()
@@ -123,4 +130,10 @@ void logTemp()
     line += String(tempC, 1);
 
     hist->log(line.c_str());
+}
+
+void checkWiFi()
+{
+    if (WiFi.status() != WL_CONNECTED)
+        WiFi.reconnect();
 }

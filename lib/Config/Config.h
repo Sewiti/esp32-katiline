@@ -17,6 +17,7 @@
 #define NETMASK 255, 255, 255, 0
 #define DNS_PRI 1, 1, 1, 3
 #define DNS_ALT 1, 0, 0, 3
+#define WIFI_CHECK_FREQ MINUTE
 
 #define SSID "WIFI_SSID"
 #define PASS "WIFI_PASS"
