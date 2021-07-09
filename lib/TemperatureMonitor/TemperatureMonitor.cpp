@@ -27,6 +27,11 @@ TemperatureMonitor::~TemperatureMonitor()
     delete this->tempTicker;
 }
 
+float TemperatureMonitor::getTempC()
+{
+    return this->tempC;
+}
+
 void TemperatureMonitor::tempHandler()
 {
     if (this->tempC == DEVICE_DISCONNECTED_C)

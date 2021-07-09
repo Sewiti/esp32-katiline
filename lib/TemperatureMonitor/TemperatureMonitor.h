@@ -3,6 +3,7 @@
 
 #include <DateTime.h>
 #include <DallasTemperature.h>
+#include <Logging.h>
 #include <Ticker.h>
 #include <WebServer.h>
 
@@ -16,6 +17,7 @@ protected:
     DallasTemperature sensors;
     DeviceAddress tempAddr;
 
+    Logging *logging;
     WebServer *server;
 
     void readTemp();
@@ -25,6 +27,7 @@ public:
     TemperatureMonitor(WebServer *server, const int &pin, const int &tempPollMillis, const Uri &uri = F("/temp"));
     ~TemperatureMonitor();
 
+    float getTempC();
     void update();
 };
 

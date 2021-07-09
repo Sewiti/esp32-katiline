@@ -3,7 +3,12 @@
 
 #include <DateTimeTZ.h>
 
-// Time
+// Millisecond helpers
+#define SECOND 1000
+#define MINUTE 60 * SECOND
+#define HOUR 60 * MINUTE
+
+// Timezone
 #define TIMEZONE TZ_Europe_Vilnius
 
 // Network
@@ -18,7 +23,13 @@
 
 // Sensors
 #define TEMP_PIN 4
-#define TEMP_POLLING_MILLIS 15000 // 15sec
+#define TEMP_POLLING 15 * SECOND
+
+// Temp history
+#define HIST_FREQ 5 * MINUTE
+#define HIST_FILES 14
+#define HIST_PER_FILE 300
+// #define HIST_PER_FILE 24 * HOUR / HIST_FREQ // 288
 
 // Server
 #define TEMP_URI "/temp"
