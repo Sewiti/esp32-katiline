@@ -1,27 +1,36 @@
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <DateTime.h>
+#include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <Ticker.h>
-#include <WebServer.h>
 
 #include <Config.h>
 #include <Logging.h>
 #include <TemperatureMonitor.h>
 
+#ifndef COMPILE_TIME
+#define COMPILE_TIME ""
+#endif
+
+#ifndef GIT_COMMIT
+#define GIT_COMMIT ""
+#endif
+
 void logTemp();
 void checkWiFi();
 
-String info;
-Logging *hist;
-TemperatureMonitor *monitor;
-Ticker *histTicker;
-Ticker *wifiTicker;
-WebServer *server;
+AsyncWebServer server(80);
+TemperatureMonitor monitor(TEMP_PIN, TEMP_POLLING);
+Ticker histTicker(logTemp, HIST_FREQ, 0, MILLIS);
+Ticker wifiTicker(checkWiFi, WIFI_CHECK_FREQ, 0, MILLIS);
+
+Logging *hist; // Has to be initialized after SPIFFS
 
 void setup()
 {
     Serial.begin(115200);
-    sleep(1);
+    delay(1000);
 
     // Filesystem
     if (!SPIFFS.begin())
@@ -52,9 +61,13 @@ void setup()
     Serial.print(F("\nConnected: "));
     Serial.println(WiFi.localIP());
 
-    // Setup auto reconnect if connection dropped
-    wifiTicker = new Ticker(checkWiFi, WIFI_CHECK_FREQ, 0, MILLIS);
-    wifiTicker->start();
+    // Setup auto WiFi auto reconnect
+    wifiTicker.start();
+
+    // Temperature monitoring
+    monitor.begin();
+    hist = new Logging(&SPIFFS, HIST_PATH, HIST_FILES, HIST_PER_FILE);
+    histTicker.start();
 
     // Time
     Serial.print(F("Getting time"));
@@ -65,70 +78,74 @@ void setup()
         delay(1000);
     }
 
-    String time = DateTime.format("%T %b %e %Y");
+    String time = DateTime.format(DateFormatter::ISO8601);
     Serial.print(F("\nCurrent time: "));
     Serial.println(time);
 
     // Basic info
-    info = F("{\"compiled\":\"");
-    info += __TIME__;
-    info += F(" ");
-    info += __DATE__;
-    info += F("\",\"lastBoot\":\"");
-    info += time;
-    info += F("\"}");
+    StaticJsonDocument<120> info;
+    info["lastBoot"] = time;
+    info["compileTime"] = COMPILE_TIME;
+    info["commit"] = GIT_COMMIT;
+    char infoSerialized[120];
+    serializeJson(info, infoSerialized);
 
     // Server
-    server = new WebServer(80);
-    server->onNotFound([]()
-                       { server->send(404, F("text/plain"), F("Not Found")); });
-    server->enableCORS();
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 
-    // Temperature monitor
-    monitor = new TemperatureMonitor(server, TEMP_PIN, TEMP_POLLING, F(TEMP_URI));
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  auto response = request->beginResponse(SPIFFS, F(INDEX_GZ_PATH), F("text/html"));
+                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
+                  response->addHeader(F("Content-Encoding"), F("gzip"));
+                  request->send(response);
+              });
+    server.rewrite("/index.html", "/");
 
-    // Temperature history
-    hist = new Logging(&SPIFFS, "/test", HIST_FILES, HIST_PER_FILE);
-    histTicker = new Ticker(logTemp, HIST_FREQ, 0, MILLIS);
-    histTicker->start();
+    server.on(INFO_URI, HTTP_GET, [infoSerialized](AsyncWebServerRequest *request)
+              { request->send(200, F("application/json"), infoSerialized); });
 
-    String path, uri;
-    for (int i = 0; i < HIST_FILES; i++)
-    {
-        uri = String("/hist/" + String(i));
-        path = hist->getPath(i);
-        server->serveStatic(uri.c_str(), SPIFFS, path.c_str(), "no-cache");
-    }
+    server.on(TEMP_URI, HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  auto response = request->beginResponseStream(F("application/json"));
+                  StaticJsonDocument<20> json;
+                  auto temp = monitor.getTempC();
+                  if (temp != DEVICE_DISCONNECTED_C)
+                      json[TEMP_KEY] = temp;
+                  else
+                      json[TEMP_KEY] = nullptr;
+                  serializeJson(json, *response);
+                  request->send(response);
+              });
 
-    // Extra endpoints
-    server->serveStatic("/", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
-    server->serveStatic("/index.html", SPIFFS, INDEX_FS_PATH, STATIC_CACHE_CONTROL);
+    server.serveStatic(HIST_URI, SPIFFS, HIST_PATH, "no-cache");
 
-    server->on("/info", HTTP_GET, []()
-               { server->send(200, F("application/json"), info); });
+    server.onNotFound([](AsyncWebServerRequest *request)
+                      {
+                          auto file = SPIFFS.open(F(NOTFOUND_GZ_PATH));
+                          auto response = request->beginResponse(404, F("text/html"), file.readString());
+                          file.close();
+                          response->addHeader(F("Content-Encoding"), F("gzip"));
+                          request->send(response);
+                      });
 
-    server->begin();
+    server.begin();
 }
 
 void loop()
 {
-    server->handleClient();
-    monitor->update();
-    histTicker->update();
-    wifiTicker->update();
+    monitor.update();
+    histTicker.update();
+    wifiTicker.update();
 }
 
 void logTemp()
 {
-    float tempC = monitor->getTempC();
-
-    if (tempC == DEVICE_DISCONNECTED_C)
+    auto temp = monitor.getTempC();
+    if (temp == DEVICE_DISCONNECTED_C)
         return;
 
-    String line = DateTime.format("%F %H:%M");
-    line += ',';
-    line += String(tempC, 1);
-
+    String line = DateTime.format("%F %H:%M") + ',' + String(temp, 1);
     hist->log(line.c_str());
 }
 

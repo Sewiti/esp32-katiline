@@ -22,21 +22,30 @@
 #define SSID "WIFI_SSID"
 #define PASS "WIFI_PASS"
 
-// Sensors
+// Temp
+#define TEMP_KEY "tempC"
 #define TEMP_PIN 4
 #define TEMP_POLLING 15 * SECOND
 
 // Temp history
+#define HIST_PATH "/hist"
+#define HIST_TIME_FORMAT "%F %H:%M"
 #define HIST_FREQ 5 * MINUTE
 #define HIST_FILES 14
 #define HIST_PER_FILE 300
 // #define HIST_PER_FILE 24 * HOUR / HIST_FREQ // 288
 
 // Server
+#define HIST_URI "/hist"
 #define TEMP_URI "/temp"
+#define INFO_URI "/info"
 #define STATIC_CACHE_CONTROL "max-age=86400" // 1day
 
 // Files
-#define INDEX_FS_PATH "/index.min.html"
+#define INDEX_PATH "/index.min.html"
+#define INDEX_GZ_PATH "/index.min.html.gz"
+
+#define NOTFOUND_PATH "/404.min.html"
+#define NOTFOUND_GZ_PATH "/404.min.html.gz"
 
 #endif
