@@ -1,0 +1,99 @@
+html {
+	--fg-color: #eee;
+	--bg-color: #111;
+	--primary-color-hsl: 0, 70%, 75%;
+
+	--primary-color: hsl(var(--primary-color-hsl));
+	--primary-color-30: hsla(var(--primary-color-hsl), .3);
+	--primary-color-60: hsla(var(--primary-color-hsl), .6);
+	--primary-color-80: hsla(var(--primary-color-hsl), .8);
+	--primary-color-90: hsla(var(--primary-color-hsl), .9);
+
+	scrollbar-color: var(--primary-color-90) var(--bg-color);
+}
+
+::-webkit-scrollbar {
+	height: 16px;
+	width: 16px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--primary-color-90);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--primary-color-60);
+}
+
+::-webkit-scrollbar-thumb:active {
+	background: var(--primary-color-30);
+}
+
+@media (prefers-color-scheme: light) {
+	html {
+		--fg-color: #111;
+		--bg-color: #eee;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--primary-color-60);
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--primary-color-80);
+	}
+
+	::-webkit-scrollbar-thumb:active {
+		background: var(--primary-color);
+	}
+}
+
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	background: var(--bg-color);
+	color: var(--fg-color);
+	margin: 0;
+	padding: 0 1em;
+}
+
+main {
+	display: block;
+	overflow: hidden;
+	position: relative;
+	width: 100%;
+}
+
+section {
+	margin: 0 auto;
+	width: 100%;
+	max-width: 90em;
+	padding-top: 1em;
+}
+
+.huge {
+	font-size: 6em;
+	font-weight: bolder;
+	line-height: 0.9;
+}
+
+.center {
+	text-align: center;
+}
+
+.temp {
+	display: inline-block;
+	text-align: left;
+}
+
+.chartWrapper {
+	overflow-x: auto;
+	width: 100%;
+}
+
+.chartContainer {
+	height: 30em;
+}

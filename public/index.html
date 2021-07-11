@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="lt">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Katilo temperatūra --.-°C</title>
+
+	<link rel="stylesheet" href="styles.css">
+	<script src="chart-3.4.1.js"></script>
+	<script src="main.js"></script>
+</head>
+
+<body>
+	<main>
+		<section id="temperature" class="center">
+			<div class="temp">
+				<h3 style="margin-bottom: 0; user-select: none;">Katilo temperatūra</h3>
+				<span class="huge"><span id="temp">--.-</span>&deg;C</span>
+			</div>
+		</section>
+		<section id="history">
+			<h3 style="user-select: none;">Istorija</h3>
+			<div class="chartWrapper">
+				<div class="chartContainer"> <canvas id="hist"></canvas></div>
+			</div>
+		</section>
+	</main>
+</body>
+
+</html>

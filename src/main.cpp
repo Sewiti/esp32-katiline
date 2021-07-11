@@ -100,7 +100,31 @@ void setup()
                   response->addHeader(F("Content-Encoding"), F("gzip"));
                   request->send(response);
               });
-    server.rewrite("/index.html", "/");
+    server.rewrite(INDEX_URI, "/");
+
+    server.on(STYLES_URI, HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  auto response = request->beginResponse(SPIFFS, F(STYLES_GZ_PATH), F("text/css"));
+                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
+                  response->addHeader(F("Content-Encoding"), F("gzip"));
+                  request->send(response);
+              });
+
+    server.on(MAIN_URI, HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  auto response = request->beginResponse(SPIFFS, F(MAIN_GZ_PATH), F("text/javascript"));
+                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
+                  response->addHeader(F("Content-Encoding"), F("gzip"));
+                  request->send(response);
+              });
+
+    server.on(CHARTJS_URI, HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  auto response = request->beginResponse(SPIFFS, F(CHARTJS_GZ_PATH), F("text/javascript"));
+                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
+                  response->addHeader(F("Content-Encoding"), F("gzip"));
+                  request->send(response);
+              });
 
     server.on(INFO_URI, HTTP_GET, [infoSerialized](AsyncWebServerRequest *request)
               { request->send(200, F("application/json"), infoSerialized); });
@@ -108,6 +132,7 @@ void setup()
     server.on(TEMP_URI, HTTP_GET, [](AsyncWebServerRequest *request)
               {
                   auto response = request->beginResponseStream(F("application/json"));
+                  response->addHeader(F("Cache-Control"), F("no-cache"));
                   StaticJsonDocument<20> json;
                   auto temp = monitor.getTempC();
                   if (temp != DEVICE_DISCONNECTED_C)
@@ -121,13 +146,7 @@ void setup()
     server.serveStatic(HIST_URI, SPIFFS, HIST_PATH, "no-cache");
 
     server.onNotFound([](AsyncWebServerRequest *request)
-                      {
-                          auto file = SPIFFS.open(F(NOTFOUND_GZ_PATH));
-                          auto response = request->beginResponse(404, F("text/html"), file.readString());
-                          file.close();
-                          response->addHeader(F("Content-Encoding"), F("gzip"));
-                          request->send(response);
-                      });
+                      { request->send(404, F("text/plain"), F("404 page not found")); });
 
     server.begin();
 }

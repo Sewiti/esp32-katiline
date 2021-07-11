@@ -39,13 +39,18 @@
 #define HIST_URI "/hist"
 #define TEMP_URI "/temp"
 #define INFO_URI "/info"
-#define STATIC_CACHE_CONTROL "max-age=86400" // 1day
+
+#define INDEX_URI "/index.html"
+#define STYLES_URI "/styles.css"
+#define MAIN_URI "/main.js"
+#define CHARTJS_URI "/chart-3.4.1.js"
+
+#define STATIC_CACHE_CONTROL "public, max-age=604800" // 7day
 
 // Files
-#define INDEX_PATH "/index.min.html"
-#define INDEX_GZ_PATH "/index.min.html.gz"
-
-#define NOTFOUND_PATH "/404.min.html"
-#define NOTFOUND_GZ_PATH "/404.min.html.gz"
+#define INDEX_GZ_PATH "/public/index.html.gz"
+#define STYLES_GZ_PATH "/public/styles.css.gz"
+#define MAIN_GZ_PATH "/public/main.js.gz"
+#define CHARTJS_GZ_PATH "/public/chart-3.4.1.js.gz"
 
 #endif
