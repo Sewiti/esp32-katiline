@@ -132,7 +132,6 @@ void setup()
     server.on(TEMP_URI, HTTP_GET, [](AsyncWebServerRequest *request)
               {
                   auto response = request->beginResponseStream(F("application/json"));
-                  response->addHeader(F("Cache-Control"), F("no-cache"));
                   StaticJsonDocument<20> json;
                   auto temp = monitor.getTempC();
                   if (temp != DEVICE_DISCONNECTED_C)
@@ -143,7 +142,7 @@ void setup()
                   request->send(response);
               });
 
-    server.serveStatic(HIST_URI, SPIFFS, HIST_PATH, "no-cache");
+    server.serveStatic(HIST_URI, SPIFFS, HIST_PATH, NO_CACHE_CONTROL);
 
     server.onNotFound([](AsyncWebServerRequest *request)
                       { request->send(404, F("text/plain"), F("404 page not found")); });

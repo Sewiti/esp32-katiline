@@ -45,6 +45,7 @@
 #define MAIN_URI "/main.js"
 #define CHARTJS_URI "/chart-3.4.1.js"
 
+#define NO_CACHE_CONTROL "no-store, max-age=0"
 #define STATIC_CACHE_CONTROL "public, max-age=604800" // 7day
 
 // Files
