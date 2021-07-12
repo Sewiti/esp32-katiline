@@ -110,7 +110,6 @@ window.addEventListener("load", () => {
 	let primaryCol = style.getPropertyValue("--primary-color");
 	let primaryColAlt = style.getPropertyValue("--primary-color-60");
 	let fgCol = style.getPropertyValue("--fg-color");
-	console.log(primaryCol);
 
 	histChart = new Chart(document.getElementById("hist"), {
 		type: "line",
