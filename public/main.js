@@ -19,28 +19,26 @@ const updateTemp = () => {
 		.catch(reason => console.log(reason));
 };
 
-const updateHist = (from, n, scroll = false) => {
-	if (from >= n) { return; }
+const updateHist = (fresh = false) => {
 	lastUpdateChart = Date.now();
-	fetch("hist/" + from)
+	fetch("hist")
 		.then(res => {
-			if (!res.ok) { throw new Error("Not 2xx response"); }
 			return res.text();
 		})
 		.then(body => parseHist(body))
 		.then(data => {
-			for (let i = 0; i < data.length; i++) {
-				appendHist(data[i]);
+			if (fresh) {
+				hist = data;
+			} else {
+				for (let i = 0; i < data.length; i++) {
+					appendHist(data[i]);
+				}
 			}
 			updateHistChart();
-			if (scroll) { scrollToEnd(); }
-			updateHist(from + 1, n, scroll);
+			if (fresh) { scrollToEnd(); }
 		})
 		.catch(reason => console.log(reason));
 };
-
-const updateHistFull = () => updateHist(0, 14, true);
-const updateHistLatest = () => updateHist(0, 1);
 
 const updateHistChart = () => {
 	histChart.data.labels = [];
@@ -102,7 +100,7 @@ const scrollToEnd = () => {
 
 window.addEventListener("focus", () => {
 	if (Date.now() - lastUpdateTemp > tempPollMS * 2) { updateTemp(); }
-	if (Date.now() - lastUpdateChart > histPollMS * 2) { updateHistFull(); }
+	if (Date.now() - lastUpdateChart > histPollMS * 2) { updateHist(true); }
 });
 
 window.addEventListener("load", () => {
@@ -121,8 +119,9 @@ window.addEventListener("load", () => {
 				},
 				pointHitRadius: 32,
 				pointBorderWidth: 0,
+				hoverBackgroundColor: primaryCol,
 				pointBackgroundColor: primaryCol,
-				pointRadius: 0,
+				pointRadius: 1,
 				pointHoverRadius: 8,
 				borderWidth: 4,
 				borderColor: primaryCol,
@@ -148,12 +147,13 @@ window.addEventListener("load", () => {
 					callbacks: { label: ctx => ctx.raw.toFixed(1) + "°C" }
 				}
 			},
-			maintainAspectRatio: false
+			maintainAspectRatio: false,
+			animation: false,
 		}
 	});
 
 	updateTemp();
-	updateHistFull();
+	updateHist(true);
 	setInterval(updateTemp, tempPollMS);
-	setInterval(updateHistLatest, histPollMS);
+	setInterval(() => { updateHist(); }, histPollMS);
 });

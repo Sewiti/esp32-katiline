@@ -1,85 +1,43 @@
 #include "Logging.h"
 // https://www.tutorialspoint.com/esp32_for_iot/esp32_for_iot_spiffs_storage.htm
 
-Logging::Logging(fs::FS *fs, const char *dirPath, int files, int perFile)
+Logging::Logging(fs::FS *fs, const char *path, int keep_soft, int keep_hard)
 {
 	this->fs = fs;
-	this->name = (char *)dirPath;
-	this->maxFiles = files;
-	this->maxPerFile = perFile;
+	this->path = (char*) path;
+	this->keep_soft = keep_soft;
+	this->keep_hard = keep_hard;
 
-	this->n = (this->getFilesCount() > 0 ? this->getFileLinesCount(0) : 0);
+	this->n = this->getCount();
+
+	char tempPath[strlen(this->path) + sizeof TEMP_SUFFIX];
+	sprintf(tempPath, "%s" TEMP_SUFFIX, this->path);
+
+	if (this->fs->exists(tempPath))
+		this->fs->remove(tempPath);
 }
 
 bool Logging::log(const char *line)
 {
-	if (this->n >= this->maxPerFile)
-		if (!this->rotate())
+	if (this->n < this->keep_hard)
+	{
+		if (!this->append(line))
 			return false;
+		this->n++;
+		return true;
+	}
 
-	if (!this->append(0, line))
+	if (!this->rotateAppend(line))
 		return false;
-
-	this->n++;
+	this->n = this->keep_soft;
 	return true;
 }
 
-String Logging::getPath(int log)
+int Logging::getCount()
 {
-	String path = this->name;
-	path += '/';
-	path += log;
-	return path;
-}
-
-int Logging::getFilesCount()
-{
-	String path = this->name;
-
-	File root = this->fs->open(path);
-	if (!root)
-	{
-		return 0;
-	}
-
-	if (!root.isDirectory())
-	{
-		Serial.print(path);
-		Serial.println(F(": not a directory"));
-		root.close();
-		return -1;
-	}
-
-	int n = 0;
-	for (File file = root.openNextFile(); file; file = root.openNextFile())
-	{
-		file.close();
-		n++;
-	}
-
-	root.close();
-	return n;
-}
-
-int Logging::getFileLinesCount(int log)
-{
-	String path = this->getPath(log);
-
-	File file = this->fs->open(path);
+	File file = this->fs->open(this->path);
 	if (!file)
-	{
-		Serial.print(path);
-		Serial.println(F(": failed to open file for reading"));
-		return -1;
-	}
-
-	if (file.isDirectory())
-	{
-		Serial.print(path);
-		Serial.println(F(": not a file"));
-		file.close();
-		return -1;
-	}
+		return 0;
 
 	int n = 0;
 	while (file.available())
@@ -93,11 +51,9 @@ int Logging::getFileLinesCount(int log)
 	return n;
 }
 
-bool Logging::append(int log, const char *line)
+bool Logging::append(const char *line)
 {
-	String path = this->getPath(log);
-
-	File file = this->fs->open(path, FILE_APPEND);
+	File file = this->fs->open(this->path, FILE_APPEND);
 	if (!file)
 	{
 		Serial.print(path);
@@ -105,19 +61,11 @@ bool Logging::append(int log, const char *line)
 		return false;
 	}
 
-	if (!file.print(line))
+	if (!file.println(line))
 	{
-		file.close();
 		Serial.print(path);
 		Serial.println(F(": failed to append a file"));
-		return false;
-	}
-
-	if (!file.print('\n'))
-	{
 		file.close();
-		Serial.print(path);
-		Serial.println(F(": failed to append a file"));
 		return false;
 	}
 
@@ -125,40 +73,73 @@ bool Logging::append(int log, const char *line)
 	return true;
 }
 
-bool Logging::rotate()
+bool Logging::rotateAppend(const char *line)
 {
-	int fc = this->getFilesCount();
+	char tempPath[strlen(this->path) + sizeof TEMP_SUFFIX];
+	sprintf(tempPath, "%s" TEMP_SUFFIX, this->path);
 
-	String path;
-	for (int i = this->maxFiles - 1; i < fc; i++)
+	File file = this->fs->open(this->path, FILE_READ);
+	if (!file)
 	{
-		path = this->getPath(i);
-		if (!this->fs->remove(path))
+		Serial.print(path);
+		Serial.println(F(": failed to open file for reading"));
+		return false;
+	}
+
+	// skip first lines
+	for (int i = this->keep_soft; i <= this->n; i++)
+	{
+		if (!file.find('\n'))
 		{
 			Serial.print(path);
-			Serial.println(F(": failed to remove file"));
+			Serial.println(F(": endline not found"));
+			file.close();
 			return false;
 		}
 	}
+	String content = file.readString();
+	file.close();
 
-	if (fc > this->maxFiles - 1)
-		fc = this->maxFiles - 1;
-
-	String from;
-	path = this->getPath(fc);
-	for (int i = fc - 1; i >= 0; i--)
+	File tempFile = this->fs->open(tempPath, FILE_WRITE);
+	if (!tempFile)
 	{
-		from = this->getPath(i);
-		if (!this->fs->rename(from, path))
-		{
-			Serial.print(from);
-			Serial.print(F(": failed to rename to "));
-			Serial.println(path);
-			return false;
-		}
-		path = from;
+		Serial.print(tempPath);
+		Serial.println(F(": failed to open file for writing"));
+		return false;
 	}
 
-	this->n = 0;
+	if (!tempFile.print(content))
+	{
+		Serial.print(tempPath);
+		Serial.println(F(": failed to write"));
+		tempFile.close();
+		return false;
+	}
+
+	// append line
+	if (!tempFile.println(line))
+	{
+		Serial.print(tempPath);
+		Serial.println(F(": failed to write"));
+		tempFile.close();
+		return false;
+	}
+	tempFile.flush();
+	tempFile.close();
+
+	// replace with temp file
+	if (!fs->remove(this->path)) {
+		Serial.print(this->path);
+		Serial.println(F(": unable to remove"));
+		return false;
+	}
+
+	if (!fs->rename(tempPath, this->path))
+	{
+		Serial.print(tempPath);
+		Serial.print(F(": unable to rename to "));
+		Serial.println(this->path);
+		return false;
+	}
 	return true;
 }

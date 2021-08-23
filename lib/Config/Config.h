@@ -15,8 +15,8 @@
 #define ADDRESS 192, 168, 10, 54
 #define GATEWAY 192, 168, 10, 1
 #define NETMASK 255, 255, 255, 0
-#define DNS_PRI 1, 1, 1, 3
-#define DNS_ALT 1, 0, 0, 3
+#define DNS_PRI 9, 9, 9, 9
+#define DNS_ALT 149, 112, 112, 112
 #define WIFI_CHECK_FREQ MINUTE
 
 #define SSID "WIFI_SSID"
@@ -31,9 +31,8 @@
 #define HIST_PATH "/hist"
 #define HIST_TIME_FORMAT "%F %H:%M"
 #define HIST_FREQ 5 * MINUTE
-#define HIST_FILES 14
-#define HIST_PER_FILE 300
-// #define HIST_PER_FILE 24 * HOUR / HIST_FREQ // 288
+#define HIST_KEEP_SOFT 864  // 3 days in 5 mins
+#define HIST_KEEP_HARD 1008 // 3.5 days in 5 mins
 
 // Server
 #define HIST_URI "/hist"
@@ -43,15 +42,12 @@
 #define INDEX_URI "/index.html"
 #define STYLES_URI "/styles.css"
 #define MAIN_URI "/main.js"
-#define CHARTJS_URI "/chart-3.4.1.js"
-
-#define NO_CACHE_CONTROL "no-store, max-age=0"
-#define STATIC_CACHE_CONTROL "public, max-age=604800" // 7day
+#define CHARTJS_URI "/chart-3.5.1.js"
 
 // Files
 #define INDEX_GZ_PATH "/public/index.html.gz"
 #define STYLES_GZ_PATH "/public/styles.css.gz"
 #define MAIN_GZ_PATH "/public/main.js.gz"
-#define CHARTJS_GZ_PATH "/public/chart-3.4.1.js.gz"
+#define CHARTJS_GZ_PATH "/public/chart-3.5.1.js.gz"
 
 #endif

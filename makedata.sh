@@ -10,3 +10,4 @@ process() {
 process public/index.html
 process public/styles.css
 process public/main.js
+process public/chart-*.js
