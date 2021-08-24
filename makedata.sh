@@ -2,12 +2,8 @@
 
 # A shell script that uses gzip to compress public resources.
 
-process() {
-	echo "$1"
-	gzip --best -c "$1" > "data/$1.gz"
-}
-
-process public/index.html
-process public/styles.css
-process public/main.js
-process public/chart-*.js
+mkdir -p data/public
+for v in $(ls public); do
+	echo "$v"
+	gzip --best -c "public/$v" > "data/$v.gz"
+done

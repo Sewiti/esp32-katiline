@@ -40,14 +40,8 @@
 #define INFO_URI "/info"
 
 #define INDEX_URI "/index.html"
-#define STYLES_URI "/styles.css"
 #define MAIN_URI "/main.js"
+#define STYLES_URI "/styles.css"
 #define CHARTJS_URI "/chart-3.5.1.js"
-
-// Files
-#define INDEX_GZ_PATH "/public/index.html.gz"
-#define STYLES_GZ_PATH "/public/styles.css.gz"
-#define MAIN_GZ_PATH "/public/main.js.gz"
-#define CHARTJS_GZ_PATH "/public/chart-3.5.1.js.gz"
 
 #endif

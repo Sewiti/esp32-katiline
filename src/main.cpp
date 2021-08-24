@@ -9,21 +9,27 @@
 #include <Logging.h>
 #include <TemperatureMonitor.h>
 
-#ifndef COMPILE_TIME
-#define COMPILE_TIME ""
-#endif
+#define CONTENT_HTML "text/html"
+#define CONTENT_CSS "text/css"
+#define CONTENT_XML "text/xml"
+#define CONTENT_JS "application/javascript"
+#define CONTENT_JSON "application/json"
+#define CONTENT_MANIFEST "application/manifest+json"
 
-#ifndef GIT_COMMIT
-#define GIT_COMMIT ""
-#endif
-
-#define CONTENT_HTML F("text/html")
-#define CONTENT_CSS F("text/css")
-#define CONTENT_JS F("application/javascript")
-#define CONTENT_JSON F("application/json")
+#define CONTENT_PNG "image/png"
+#define CONTENT_ICO "image/x-icon"
+#define CONTENT_SVG "image/svg+xml"
 
 #define NO_CACHE_CONTROL "no-store, max-age=0"
 #define STATIC_CACHE_CONTROL "public, max-age=604800" // 7 days
+
+#define SERVE_GZ(path, contentType)                                                    \
+    server.on(path, HTTP_GET, [](AsyncWebServerRequest *request) {                     \
+        auto response = request->beginResponse(SPIFFS, F(path ".gz"), F(contentType)); \
+        response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));              \
+        response->addHeader(F("Content-Encoding"), F("gzip"));                         \
+        request->send(response);                                                       \
+    });
 
 void logTemp();
 void checkWiFi();
@@ -93,39 +99,30 @@ void setup()
     // Server
     DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Origin"), F("*"));
 
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-                  auto response = request->beginResponse(SPIFFS, F(INDEX_GZ_PATH), CONTENT_HTML);
-                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
-                  response->addHeader(F("Content-Encoding"), F("gzip"));
-                  request->send(response);
-              });
-    server.rewrite(INDEX_URI, "/");
+    // Static files
+    // Website
+    SERVE_GZ(INDEX_URI, CONTENT_HTML);
+    server.rewrite("/", INDEX_URI);
 
-    server.on(STYLES_URI, HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-                  auto response = request->beginResponse(SPIFFS, F(STYLES_GZ_PATH), CONTENT_CSS);
-                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
-                  response->addHeader(F("Content-Encoding"), F("gzip"));
-                  request->send(response);
-              });
+    SERVE_GZ(CHARTJS_URI, CONTENT_JS);
+    SERVE_GZ(MAIN_URI, CONTENT_JS);
+    SERVE_GZ(STYLES_URI, CONTENT_CSS);
 
-    server.on(MAIN_URI, HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-                  auto response = request->beginResponse(SPIFFS, F(MAIN_GZ_PATH), CONTENT_JS);
-                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
-                  response->addHeader(F("Content-Encoding"), F("gzip"));
-                  request->send(response);
-              });
+    // Icons
+    SERVE_GZ("/android-chrome-192x192.png", CONTENT_PNG);
+    SERVE_GZ("/android-chrome-512x512.png", CONTENT_PNG);
+    SERVE_GZ("/apple-touch-icon.png", CONTENT_PNG);
+    SERVE_GZ("/favicon-16x16.png", CONTENT_PNG);
+    SERVE_GZ("/favicon-32x32.png", CONTENT_PNG);
+    SERVE_GZ("/mstile-150x150.png", CONTENT_PNG);
 
-    server.on(CHARTJS_URI, HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-                  auto response = request->beginResponse(SPIFFS, F(CHARTJS_GZ_PATH), CONTENT_JS);
-                  response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));
-                  response->addHeader(F("Content-Encoding"), F("gzip"));
-                  request->send(response);
-              });
+    SERVE_GZ("/favicon.ico", CONTENT_ICO);
+    SERVE_GZ("/safari-pinned-tab.svg", CONTENT_SVG);
 
+    SERVE_GZ("/browserconfig.xml", CONTENT_XML);
+    SERVE_GZ("/site.webmanifest", CONTENT_MANIFEST);
+
+    // API Endpoints
     server.on(INFO_URI, HTTP_GET, [](AsyncWebServerRequest *request)
               {
                   auto response = request->beginResponseStream(CONTENT_JSON);
