@@ -117,14 +117,14 @@ window.addEventListener("load", () => {
 					above: primaryColAlt,
 					target: "origin"
 				},
-				pointHitRadius: 32,
-				pointBorderWidth: 0,
-				hoverBackgroundColor: primaryCol,
-				pointBackgroundColor: primaryCol,
-				pointRadius: 1,
-				pointHoverRadius: 8,
-				borderWidth: 4,
 				borderColor: primaryCol,
+				borderWidth: 4,
+				hoverBorderWidth: 0,
+				pointBackgroundColor: primaryCol,
+				hoverBackgroundColor: primaryCol,
+				pointRadius: 0,
+				pointHoverRadius: 8,
+				pointHitRadius: 32,
 				tension: 0.4
 			}]
 		},

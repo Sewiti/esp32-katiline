@@ -36,7 +36,7 @@ html {
 @media (prefers-color-scheme: light) {
 	html {
 		--fg-color: #111;
-		--bg-color: #eee;
+		--bg-color: #fff;
 	}
 
 	::-webkit-scrollbar-thumb {
