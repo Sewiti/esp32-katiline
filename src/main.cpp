@@ -23,7 +23,14 @@
 #define NO_CACHE_CONTROL "no-store, max-age=0"
 #define STATIC_CACHE_CONTROL "public, max-age=604800" // 7 days
 
-#define SERVE_GZ(path, contentType)                                                    \
+#define SERVE_STATIC(path, contentType)                                          \
+    server.on(path, HTTP_GET, [](AsyncWebServerRequest *request) {               \
+        auto response = request->beginResponse(SPIFFS, F(path), F(contentType)); \
+        response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));        \
+        request->send(response);                                                 \
+    });
+
+#define SERVE_STATIC_GZ(path, contentType)                                             \
     server.on(path, HTTP_GET, [](AsyncWebServerRequest *request) {                     \
         auto response = request->beginResponse(SPIFFS, F(path ".gz"), F(contentType)); \
         response->addHeader(F("Cache-Control"), F(STATIC_CACHE_CONTROL));              \
@@ -40,7 +47,7 @@ Ticker histTicker(logTemp, HIST_FREQ, 0, MILLIS);
 Ticker wifiTicker(checkWiFi, WIFI_CHECK_FREQ, 0, MILLIS);
 
 char bootTime[32];
-Logging *hist; // Has to be initialized after SPIFFS
+Logging *hist; // Has to be initialized after SPIFFS.
 
 void setup()
 {
@@ -101,26 +108,25 @@ void setup()
 
     // Static files
     // Website
-    SERVE_GZ(INDEX_URI, CONTENT_HTML);
-    server.rewrite("/", INDEX_URI);
-
-    SERVE_GZ(CHARTJS_URI, CONTENT_JS);
-    SERVE_GZ(MAIN_URI, CONTENT_JS);
-    SERVE_GZ(STYLES_URI, CONTENT_CSS);
+    SERVE_STATIC_GZ("/index.html", CONTENT_HTML);
+    SERVE_STATIC_GZ("/main.js", CONTENT_JS);
+    SERVE_STATIC_GZ("/styles.css", CONTENT_CSS);
+    SERVE_STATIC_GZ("/chart-3.5.1.js", CONTENT_JS);
+    server.rewrite("/", "/index.html");
 
     // Icons
-    SERVE_GZ("/android-chrome-192x192.png", CONTENT_PNG);
-    SERVE_GZ("/android-chrome-512x512.png", CONTENT_PNG);
-    SERVE_GZ("/apple-touch-icon.png", CONTENT_PNG);
-    SERVE_GZ("/favicon-16x16.png", CONTENT_PNG);
-    SERVE_GZ("/favicon-32x32.png", CONTENT_PNG);
-    SERVE_GZ("/mstile-150x150.png", CONTENT_PNG);
+    SERVE_STATIC("/android-chrome-192x192.png", CONTENT_PNG);
+    SERVE_STATIC("/android-chrome-512x512.png", CONTENT_PNG);
+    SERVE_STATIC("/apple-touch-icon.png", CONTENT_PNG);
+    SERVE_STATIC("/favicon-16x16.png", CONTENT_PNG);
+    SERVE_STATIC("/favicon-32x32.png", CONTENT_PNG);
+    SERVE_STATIC("/mstile-150x150.png", CONTENT_PNG);
 
-    SERVE_GZ("/favicon.ico", CONTENT_ICO);
-    SERVE_GZ("/safari-pinned-tab.svg", CONTENT_SVG);
+    SERVE_STATIC_GZ("/favicon.ico", CONTENT_ICO);
+    SERVE_STATIC_GZ("/safari-pinned-tab.svg", CONTENT_SVG);
 
-    SERVE_GZ("/browserconfig.xml", CONTENT_XML);
-    SERVE_GZ("/site.webmanifest", CONTENT_MANIFEST);
+    SERVE_STATIC("/browserconfig.xml", CONTENT_XML);
+    SERVE_STATIC("/site.webmanifest", CONTENT_MANIFEST);
 
     // API Endpoints
     server.on(INFO_URI, HTTP_GET, [](AsyncWebServerRequest *request)

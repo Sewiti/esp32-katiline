@@ -4,7 +4,7 @@
 Logging::Logging(fs::FS *fs, const char *path, int keep_soft, int keep_hard)
 {
 	this->fs = fs;
-	this->path = (char*) path;
+	this->path = (char *)path;
 	this->keep_soft = keep_soft;
 	this->keep_hard = keep_hard;
 
@@ -128,7 +128,8 @@ bool Logging::rotateAppend(const char *line)
 	tempFile.close();
 
 	// replace with temp file
-	if (!fs->remove(this->path)) {
+	if (!fs->remove(this->path))
+	{
 		Serial.print(this->path);
 		Serial.println(F(": unable to remove"));
 		return false;

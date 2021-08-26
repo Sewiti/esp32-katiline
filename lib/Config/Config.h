@@ -34,14 +34,9 @@
 #define HIST_KEEP_SOFT 864  // 3 days in 5 mins
 #define HIST_KEEP_HARD 1008 // 3.5 days in 5 mins
 
-// Server
+// API endpoints
 #define HIST_URI "/hist"
 #define TEMP_URI "/temp"
 #define INFO_URI "/info"
-
-#define INDEX_URI "/index.html"
-#define MAIN_URI "/main.js"
-#define STYLES_URI "/styles.css"
-#define CHARTJS_URI "/chart-3.5.1.js"
 
 #endif
